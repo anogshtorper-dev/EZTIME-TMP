@@ -59,12 +59,10 @@ We welcome contributions! Please read our [contributing guidelines](CONTRIBUTING
    ```  
 5. Open a Pull Request.  
 
-## 📜 License  
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 ## 📧 Contact  
 For any inquiries, please reach out to:  
-**Email:** example@example.com  
+**Email:** anogshtorper@gmail.com 
 **GitHub:** [anogshtorper-dev](https://github.com/anogshtorper-dev)  
   
 Stay organized and efficient! 🌟
