@@ -13,7 +13,7 @@
     <input type="text" id="employee_id" name="employee_id" required><br><br>
     
     <label for="scanCode">Enter QR/NFC Code (Optional):</label>
-    <input type="text" id="scanCode" name="scanCode" placeholder="Scan QR or NFC Code"><br><br>
+    <input type="text" id="scanCode" name="scanCode" placeholder="Scan QR or NFC Code" oninput="handleScanInput(this.value)"><br><br>
     
     <label for="subsidiary">Subsidiary:</label>
     <input type="text" id="subsidiary" name="subsidiary" readonly><br><br>
