@@ -301,3 +301,17 @@ GET /v1/payroll/daily?employee_id=E1022&date=2026-01-19&include_shifts=false&inc
 Authorization: Bearer demo-token
 ```
 The response will omit the `shifts`, `hours_by_subsidiary`, and `hours_by_role` fields entirely.
+
+---
+**Direct QR/NFC Scan Input (Mobile/Device Integration)**
+
+To accept direct QR/NFC scans (instead of manual selection) and update the employee’s working data automatically, the system needs a real scan-capable client (mobile app or kiosk) and a backend endpoint that translates a scan payload into an existing (subsidiary, role) combination and creates the corresponding record in the current database schema. 
+In practice, QR/NFC scanning happens on the device level (camera for QR, NFC reader for tags), so the React UI alone cannot “receive scans” unless it runs inside a mobile container (e.g., React Native / Expo) or a device/kiosk environment with scanner APIs. 
+The minimal integration approach is: 
+(1) encode each QR/NFC tag with a payload that identifies the target assignment, e.g. subsidiary=<name>;role=<name> or a JSON payload
+(2) the scan client parses this payload and auto-fills subsidiary and role (and optionally the employee)
+(3) the client then calls the existing POST /shifts endpoint with the same fields already supported by the backend (employee_id, date, subsidiary, role, start_time, end_time) 
+
+If you want the system to behave like true “clock-in/clock-out” from a scan (instead of entering start/end times) you must add a small server feature: store scan events (IN/OUT) and then derive shifts from them. Concretely, this requires adding a new table (e.g., RawEvents) with fields like employee_id, timestamp, event_type (IN/OUT), and scan_payload (or resolved subsidiary/role), plus a new endpoint (e.g., POST /events/scan) that receives { employee_id, event_type, scanned_payload }, validates it against AllowedRoles, stores the event, and optionally auto-generates a shift row in RawShifts when it can pair an IN event with the next OUT event. 
+This keeps the current payroll logic intact (it already computes daily results from RawShifts) while enabling real scan-driven updates and removing the need for manual entry in the UI 
+
