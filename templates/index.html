@@ -3,265 +3,33 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EZTIME Clock-in/out</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f4f4f4;
-      margin: 0;
-      padding: 20px;
-    }
-    h1 {
-      color: #333;
-    }
-    .container {
-      background-color: white;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      max-width: 800px;
-      margin: 0 auto;
-    }
-    .input-group {
-      margin-bottom: 15px;
-    }
-    .input-group label {
-      display: block;
-      font-weight: bold;
-    }
-    .input-group select,
-    .input-group input {
-      width: 100%;
-      padding: 8px;
-      margin-top: 5px;
-      font-size: 14px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-    }
-    .input-group textarea {
-      width: 100%;
-      padding: 8px;
-      margin-top: 5px;
-      font-size: 14px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      height: 80px;
-    }
-    .btn {
-      padding: 10px 20px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 16px;
-    }
-    .btn:disabled {
-      background-color: #ddd;
-    }
-    .status {
-      margin-top: 20px;
-      padding: 10px;
-      background-color: #f9f9f9;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 14px;
-    }
-  </style>
+  <title>EZTIME – Time Attendance & Payroll</title>
 </head>
 <body>
-
-  <div class="container">
-    <h1>EZTIME Clock-in/out</h1>
+  <h1>EZTIME - Time Attendance & Payroll</h1>
+  
+  <form id="shiftForm">
+    <label for="employee_id">Employee ID:</label>
+    <input type="text" id="employee_id" name="employee_id" required><br><br>
     
-    <div class="input-group">
-      <label for="employee">Select Employee</label>
-      <select id="employee">
-        <!-- This will be populated dynamically -->
-      </select>
-    </div>
+    <label for="scanCode">Enter QR/NFC Code (Optional):</label>
+    <input type="text" id="scanCode" name="scanCode" placeholder="Scan QR or NFC Code"><br><br>
+    
+    <label for="subsidiary">Subsidiary:</label>
+    <input type="text" id="subsidiary" name="subsidiary" readonly><br><br>
+    
+    <label for="role">Role:</label>
+    <input type="text" id="role" name="role" readonly><br><br>
+    
+    <label for="start_time">Start Time:</label>
+    <input type="time" id="start_time" name="start_time" required><br><br>
+    
+    <label for="end_time">End Time:</label>
+    <input type="time" id="end_time" name="end_time" required><br><br>
+    
+    <button type="button" onclick="submitShift()">Submit Shift</button>
+  </form>
 
-    <div class="input-group">
-      <label for="eventType">Event Type</label>
-      <select id="eventType">
-        <option value="IN">Clock-in</option>
-        <option value="OUT">Clock-out</option>
-      </select>
-    </div>
-
-    <div class="input-group">
-      <label for="subsidiary">Subsidiary</label>
-      <select id="subsidiary" disabled>
-        <!-- This will be populated dynamically -->
-      </select>
-    </div>
-
-    <div class="input-group">
-      <label for="role">Role</label>
-      <select id="role" disabled>
-        <!-- This will be populated dynamically -->
-      </select>
-    </div>
-
-    <div class="input-group">
-      <label for="scanPayload">Scan Payload (QR/NFC)</label>
-      <textarea id="scanPayload" placeholder="Scan QR/NFC or paste payload here"></textarea>
-    </div>
-
-    <div class="input-group">
-      <button class="btn" id="resolveScanButton" disabled>Resolve Scan</button>
-    </div>
-
-    <div class="input-group">
-      <label for="manualReason">Manual Reason (if any)</label>
-      <textarea id="manualReason" placeholder="Enter reason for manual entry"></textarea>
-    </div>
-
-    <div class="input-group">
-      <button class="btn" id="saveEventButton" disabled>Save Event</button>
-    </div>
-
-    <div class="status" id="statusMessage"></div>
-  </div>
-
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/react-qr-reader"></script>
-
-  <script>
-    // Sample data, these should come from your server in a real implementation
-    const employees = [
-      { employee_id: "E1001", full_name: "Dana Alon", status: "active" },
-      { employee_id: "E1002", full_name: "Amit Edri", status: "active" }
-    ];
-
-    const allowedRoles = {
-      "Subsidiary A": ["Security", "Warehouse"],
-      "Subsidiary B": ["Manager", "Warehouse"]
-    };
-
-    // DOM Elements
-    const employeeSelect = document.getElementById("employee");
-    const eventTypeSelect = document.getElementById("eventType");
-    const subsidiarySelect = document.getElementById("subsidiary");
-    const roleSelect = document.getElementById("role");
-    const scanPayloadInput = document.getElementById("scanPayload");
-    const resolveScanButton = document.getElementById("resolveScanButton");
-    const saveEventButton = document.getElementById("saveEventButton");
-    const statusMessage = document.getElementById("statusMessage");
-
-    let selectedEmployeeId = "";
-    let selectedSubsidiary = "";
-    let selectedRole = "";
-
-    // Populate employee list dynamically
-    employees.forEach(employee => {
-      const option = document.createElement("option");
-      option.value = employee.employee_id;
-      option.textContent = `${employee.full_name} (${employee.status})`;
-      employeeSelect.appendChild(option);
-    });
-
-    // Event Listeners
-    employeeSelect.addEventListener("change", (event) => {
-      selectedEmployeeId = event.target.value;
-      updateRoleAndSubsidiary();
-    });
-
-    resolveScanButton.addEventListener("click", () => {
-      const payload = scanPayloadInput.value.trim();
-      if (payload) {
-        resolveScan(payload);
-      } else {
-        setStatusMessage("Please enter a valid scan payload.");
-      }
-    });
-
-    saveEventButton.addEventListener("click", () => {
-      const eventData = {
-        employee_id: selectedEmployeeId,
-        event_type: eventTypeSelect.value,
-        subsidiary_id: selectedSubsidiary,
-        role_id: selectedRole,
-        manual_reason: document.getElementById("manualReason").value,
-      };
-
-      // Here you would send the eventData to your server via a fetch or axios call
-      setStatusMessage(`Event for ${eventData.employee_id} saved successfully!`);
-    });
-
-    // Functions
-    function updateRoleAndSubsidiary() {
-      // Reset the dropdowns
-      subsidiarySelect.innerHTML = "";
-      roleSelect.innerHTML = "";
-
-      if (selectedEmployeeId) {
-        // Populate subsidiary options based on allowed roles
-        Object.keys(allowedRoles).forEach(subsidiary => {
-          const option = document.createElement("option");
-          option.value = subsidiary;
-          option.textContent = subsidiary;
-          subsidiarySelect.appendChild(option);
-        });
-
-        // Enable the subsidiary and role dropdowns
-        subsidiarySelect.disabled = false;
-      } else {
-        subsidiarySelect.disabled = true;
-        roleSelect.disabled = true;
-      }
-    }
-
-    function resolveScan(payload) {
-      // Here, you will send the payload to your backend for validation
-      // Mock response from backend (this should come from the actual server)
-      const parsedData = parseScanPayload(payload);
-      
-      if (parsedData.error) {
-        setStatusMessage(parsedData.error);
-      } else {
-        selectedSubsidiary = parsedData.subsidiary;
-        selectedRole = parsedData.role;
-
-        // Populate the role select based on the subsidiary
-        updateRoleSelect(parsedData.subsidiary);
-        setStatusMessage(`Scan resolved: Subsidiary: ${selectedSubsidiary}, Role: ${selectedRole}`);
-      }
-    }
-
-    function parseScanPayload(payload) {
-      // Mock parsing logic (you would use the backend to resolve the scan properly)
-      if (payload.includes("Subsidiary A") && payload.includes("Security")) {
-        return { subsidiary: "Subsidiary A", role: "Security", error: "" };
-      }
-      return { subsidiary: "", role: "", error: "Invalid scan payload!" };
-    }
-
-    function updateRoleSelect(subsidiary) {
-      roleSelect.innerHTML = "";
-      if (allowedRoles[subsidiary]) {
-        allowedRoles[subsidiary].forEach(role => {
-          const option = document.createElement("option");
-          option.value = role;
-          option.textContent = role;
-          roleSelect.appendChild(option);
-        });
-
-        roleSelect.disabled = false;
-      } else {
-        roleSelect.disabled = true;
-      }
-    }
-
-    function setStatusMessage(message) {
-      statusMessage.textContent = message;
-    }
-
-    // Initial setup (disabling buttons until user makes choices)
-    resolveScanButton.disabled = true;
-    saveEventButton.disabled = true;
-  </script>
-
+  <script src="app.js"></script>
 </body>
 </html>
