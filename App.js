@@ -13,11 +13,19 @@ function handleScanInput(scanCode) {
 
 // פונקציה לפענוח קוד QR/NFC
 function parseScanCode(scanCode) {
-  // זו יכולה להיות פונקציה שמפענחת את הקוד ומחזירה אובייקט עם המידע
+  // כאן ניצור פלט של נתונים לדוגמה על פי הקוד שהוזן
+  if (scanCode === "123456") {
+    return {
+      subsidiary: 'Subsidiary A',  // המידע שמתקבל מתוך הקוד
+      role: 'Security',
+      employee_name: 'Dana Alon'  // המידע שמתקבל מתוך הקוד
+    };
+  }
+  // אפשר להוסיף עוד קודים ולפענח אותם בצורה דינמית
   return {
-    subsidiary: 'Subsidiary A',  // המידע שמתקבל מתוך הקוד
-    role: 'Security',
-    employee_name: 'Dana Alon'  // המידע שמתקבל מתוך הקוד
+    subsidiary: 'Unknown Subsidiary',
+    role: 'Unknown Role',
+    employee_name: 'Unknown Employee'
   };
 }
 
