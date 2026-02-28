@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>EZTIME – Time & Attendance Demo</title>
+<style>
+  :root{--blue:#1a73e8;--red:#e53935;--green:#2e7d32;--gray:#f5f7fa;--border:#dce1e9;--radius:8px}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--gray);color:#222}
+  header{background:var(--blue);color:#fff;padding:16px 32px;display:flex;align-items:center;gap:12px}
+  header h1{font-size:1.4rem;font-weight:700}
+  header span{font-size:.85rem;opacity:.8}
+  main{max-width:1100px;margin:32px auto;padding:0 16px;display:grid;grid-template-columns:380px 1fr;gap:24px}
+  .card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:24px}
+  .card h2{font-size:1rem;font-weight:700;margin-bottom:16px;color:var(--blue);text-transform:uppercase;letter-spacing:.5px}
+  label{display:block;font-size:.8rem;font-weight:600;margin-bottom:4px;color:#555}
+  select,input{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.9rem;margin-bottom:12px}
+  select:focus,input:focus{outline:2px solid var(--blue);border-color:var(--blue)}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  button{padding:9px 18px;border:none;border-radius:6px;font-size:.9rem;font-weight:600;cursor:pointer;transition:opacity .15s}
+  .btn-primary{background:var(--blue);color:#fff}
+  .btn-success{background:var(--green);color:#fff}
+  .btn-danger{background:var(--red);color:#fff;padding:4px 10px;font-size:.8rem}
+  button:hover{opacity:.88}
+  table{width:100%;border-collapse:collapse;font-size:.875rem}
+  th{background:#f0f4ff;padding:8px;text-align:left;font-weight:700;border-bottom:2px solid var(--border)}
+  td{padding:7px 8px;border-bottom:1px solid #eee}
+  tr:hover td{background:#fafbff}
+  .results{margin-top:0}
+  .results .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+  .stat{background:#f0f4ff;border-radius:6px;padding:12px;text-align:center}
+  .stat .val{font-size:1.4rem;font-weight:700;color:var(--blue)}
+  .stat .lbl{font-size:.75rem;color:#666;margin-top:4px}
+  .salary-box{background:#e8f5e9;border-radius:6px;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+  .salary-box .salary-val{font-size:1.8rem;font-weight:800;color:var(--green)}
+  .salary-box .salary-info{font-size:.8rem;color:#444}
+  .badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:.75rem;font-weight:600}
+  .badge-night{background:#ede7f6;color:#6a1b9a}
+  .badge-ot{background:#fff3e0;color:#e65100}
+  .breakdown{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px}
+  .breakdown-block{background:#f9f9f9;border-radius:6px;padding:10px}
+  .breakdown-block h4{font-size:.8rem;font-weight:700;margin-bottom:6px;color:#555}
+  .breakdown-row{display:flex;justify-content:space-between;font-size:.83rem;padding:2px 0;border-bottom:1px solid #eee}
+  .msg{padding:10px 14px;border-radius:6px;margin-bottom:12px;font-size:.875rem}
+  .msg-err{background:#ffebee;color:var(--red);border:1px solid #ef9a9a}
+  .msg-warn{background:#fff8e1;color:#f57f17;border:1px solid #ffe082}
+  .msg-ok{background:#e8f5e9;color:var(--green);border:1px solid #a5d6a7}
+  .hidden{display:none}
+  @media(max-width:750px){main{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="15" stroke="#fff" stroke-width="2"/><path d="M16 8v8l5 3" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg>
+  <div><h1>EZTIME</h1><span>Time &amp; Attendance · Payroll Simulation</span></div>
+</header>
+<main>
+  <!-- LEFT: Add Shift Form -->
+  <div>
+    <div class="card">
+      <h2>Add Shift</h2>
+      <div id="formMsg"></div>
+
+      <label>Employee</label>
+
+      <!-- Autocomplete input -->
+      <input list="empList" id="empInput" placeholder="Start typing employee name..." autocomplete="off" />
+
+      <datalist id="empList">
+       {% for emp in employees %}
+       <option value="{{ emp['name'] }}" data-id="{{ emp['id'] }}"></option>
+       {% endfor %}
+      </datalist>
+
+      <!-- Keep the original select as hidden to avoid changing existing JS logic -->
+      <select id="empSelect" class="hidden">
+        <option value="">— select —</option>
+        {% for emp in employees %}
+        <option value="{{ emp['id'] }}">{{ emp['name'] }} ({{ emp['id'] }})</option>
+        {% endfor %}
+      </select>
+
+      <label>Date</label>
+      <input type="date" id="dateInput"/>
+
+      <label>Subsidiary</label>
+      <select id="subSelect"><option value="">— select employee first —</option></select>
+
+      <label>Role</label>
+      <select id="roleSelect"><option value="">— select subsidiary —</option></select>
+
+      <div class="row">
+        <div>
+          <label>Start Time</label>
+          <input type="time" id="startTime" placeholder="HH:MM"/>
+        </div>
+        <div>
+          <label>End Time</label>
+          <input type="time" id="endTime" placeholder="HH:MM"/>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:4px">
+        <button class="btn-primary" onclick="addShift()">＋ Add Shift</button>
+        <button class="btn-success" onclick="calculate()">⟳ Calculate</button>
+      </div>
+    </div>
+
+    <!-- Shifts list -->
+    <div class="card" style="margin-top:20px">
+      <h2>Shifts for Selected Day</h2>
+      <div id="shiftsTable"><p style="color:#999;font-size:.875rem">Select employee &amp; date, then click Calculate.</p></div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Results -->
+  <div class="card results">
+    <h2>Daily Payroll Result</h2>
+    <div id="resultsArea"><p style="color:#aaa;font-size:.9rem;margin-top:12px">Results will appear here after clicking Calculate.</p></div>
+  </div>
+</main>
+
+<script>
+// Keep allowed data per employee
+let allowedData = {};   // employee_id → [{role, subsidiary, hourly_rate}]
+let currentSub = '';
+
+// Autocomplete: employee name -> employee_id (sets hidden empSelect and triggers existing change handler)
+const empInput  = document.getElementById('empInput');
+const empSelect = document.getElementById('empSelect');
+
+empInput.addEventListener('input', function () {
+  const name = this.value.trim();
+  const options = document.querySelectorAll('#empList option');
+
+  let foundId = '';
+  options.forEach(opt => {
+    if (opt.value === name) {
+      foundId = opt.dataset.id || '';
+    }
+  });
+
+  // Update hidden select and trigger existing logic
+  empSelect.value = foundId;
+  empSelect.dispatchEvent(new Event('change'));
+});
+
+document.getElementById('empSelect').addEventListener('change', async function(){
+  const eid = this.value;
+  const subSel  = document.getElementById('subSelect');
+  const roleSel = document.getElementById('roleSelect');
+  subSel.innerHTML  = '<option value="">— loading... —</option>';
+  roleSel.innerHTML = '<option value="">— select subsidiary —</option>';
+  if(!eid) return;
+  const res = await fetch(`/allowed/${eid}`);
+  const data = await res.json();
+  allowedData[eid] = data;
+  // Build unique subsidiaries
+  const subs = [...new Set(data.map(d=>d.subsidiary))].sort();
+  subSel.innerHTML = '<option value="">— select —</option>' + subs.map(s=>`<option value="${s}">${s}</option>`).join('');
+});
+
+document.getElementById('subSelect').addEventListener('change', function(){
+  const eid = document.getElementById('empSelect').value;
+  const sub = this.value;
+  currentSub = sub;
+  const roleSel = document.getElementById('roleSelect');
+  roleSel.innerHTML = '<option value="">— select —</option>';
+  if(!eid||!sub) return;
+  const roles = (allowedData[eid]||[]).filter(d=>d.subsidiary===sub).map(d=>d.role).sort();
+  roleSel.innerHTML = '<option value="">— select —</option>' + roles.map(r=>`<option value="${r}">${r}</option>`).join('');
+});
+
+function showMsg(id, msg, type){
+  const el = document.getElementById(id);
+  el.innerHTML = `<div class="msg msg-${type}">${msg}</div>`;
+  setTimeout(()=>{ el.innerHTML=''; }, 5000);
+}
+
+async function addShift(){
+  const eid   = document.getElementById('empSelect').value;
+  const date  = document.getElementById('dateInput').value;
+  const sub   = document.getElementById('subSelect').value;
+  const role  = document.getElementById('roleSelect').value;
+  const start = document.getElementById('startTime').value;
+  const end   = document.getElementById('endTime').value;
+
+  if(!eid||!date||!sub||!role||!start||!end){
+    showMsg('formMsg','Please fill in all fields.','err'); return;
+  }
+
+  const res = await fetch('/shifts', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({employee_id:eid, date, subsidiary:sub, role, start_time:start, end_time:end})
+  });
+  const data = await res.json();
+  if(!res.ok){ showMsg('formMsg', data.detail||'Error adding shift.','err'); return; }
+  if(data.warning){ showMsg('formMsg', data.warning, 'warn'); }
+  else { showMsg('formMsg', 'Shift added successfully!', 'ok'); }
+  calculate();
+}
+
+async function calculate(){
+  const eid  = document.getElementById('empSelect').value;
+  const date = document.getElementById('dateInput').value;
+  if(!eid||!date){ showMsg('formMsg','Select employee and date first.','err'); return; }
+
+  // Fetch daily result
+  const res = await fetch(`/daily/${eid}/${date}`);
+  const d = await res.json();
+  if(!res.ok){ document.getElementById('resultsArea').innerHTML=`<div class="msg msg-err">${d.detail}</div>`; return; }
+
+  renderResults(d);
+  renderShiftsTable(d.shifts, eid, date);
+}
+
+function renderResults(d){
+  const area = document.getElementById('resultsArea');
+  if(!d.shifts||d.shifts.length===0){
+    area.innerHTML='<p style="color:#aaa;font-size:.9rem">No shifts found for this employee on this date.</p>'; return;
+  }
+
+  const nightBadge = d.night_hours_in_window>=2
+    ? `<span class="badge badge-night">🌙 Night Rule Active (${d.night_hours_in_window.toFixed(2)}h in window)</span>` : '';
+  const otBadge = d.hours_125>0||d.hours_150>0
+    ? `<span class="badge badge-ot">⚡ Overtime Applied</span>` : '';
+
+  // Breakdown
+  let subRows = Object.entries(d.hours_by_subsidiary).map(([k,v])=>
+    `<div class="breakdown-row"><span>${k}</span><span>${v.toFixed(2)}h</span></div>`).join('');
+  let roleRows = Object.entries(d.hours_by_role).map(([k,v])=>
+    `<div class="breakdown-row"><span>${k}</span><span>${v.toFixed(2)}h</span></div>`).join('');
+
+  area.innerHTML = `
+    <div style="margin-bottom:12px;font-size:.9rem;color:#444">
+      <strong>${d.employee_name}</strong> · ${d.date}
+      <div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap">${nightBadge}${otBadge}</div>
+    </div>
+    <div class="salary-box">
+      <div>
+        <div class="salary-val">₪${d.salary_simulation.toLocaleString('en-IL',{minimumFractionDigits:2})}</div>
+        <div class="salary-info">Salary Simulation (max rate: ₪${d.max_rate}/h)</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:1.1rem;font-weight:700;color:#c62828">${d.daily_deficit>0?'Deficit: '+d.daily_deficit.toFixed(2)+'h':''}</div>
+        <div style="font-size:.8rem;color:#555">Total: ${d.total_hours.toFixed(2)}h</div>
+      </div>
+    </div>
+    <div class="grid">
+      <div class="stat"><div class="val">${d.total_hours.toFixed(2)}</div><div class="lbl">Total Hours</div></div>
+      <div class="stat"><div class="val">${d.hours_100.toFixed(2)}</div><div class="lbl">Hours @100%</div></div>
+      <div class="stat"><div class="val">${d.hours_125.toFixed(2)}</div><div class="lbl">Hours @125%</div></div>
+      <div class="stat" style="background:#fff3e0"><div class="val" style="color:#e65100">${d.hours_150.toFixed(2)}</div><div class="lbl">Hours @150%</div></div>
+      <div class="stat" style="background:#fce4ec"><div class="val" style="color:#c62828">${d.daily_deficit.toFixed(2)}</div><div class="lbl">Daily Deficit</div></div>
+      <div class="stat"><div class="val">${d.overtime_threshold}</div><div class="lbl">OT Threshold (h)</div></div>
+    </div>
+    <div class="breakdown">
+      <div class="breakdown-block"><h4>📦 Hours by Subsidiary</h4>${subRows||'<i style="font-size:.8rem;color:#aaa">—</i>'}</div>
+      <div class="breakdown-block"><h4>👔 Hours by Role</h4>${roleRows||'<i style="font-size:.8rem;color:#aaa">—</i>'}</div>
+    </div>`;
+}
+
+async function deleteShift(shiftId, eid, date){
+  if(!confirm('Delete this shift?')) return;
+  await fetch(`/shifts/${shiftId}`, {method:'DELETE'});
+  calculate();
+}
+
+function renderShiftsTable(shifts, eid, date){
+  // We need IDs – re-fetch from DB via a small workaround: fetch shifts list
+  fetchShiftsForTable(eid, date);
+}
+
+async function fetchShiftsForTable(eid, date){
+  // We embed the shifts list in the daily result; but we need IDs for delete.
+  // Fetch via a dedicated lightweight call
+  const res = await fetch(`/shifts_list/${eid}/${date}`);
+  const rows = await res.json();
+  const el = document.getElementById('shiftsTable');
+  if(!rows.length){ el.innerHTML='<p style="color:#999;font-size:.875rem">No shifts yet.</p>'; return; }
+  el.innerHTML = `<table>
+    <thead><tr><th>Subsidiary</th><th>Role</th><th>Start</th><th>End</th><th>Hours</th><th></th></tr></thead>
+    <tbody>${rows.map(r=>`<tr>
+      <td>${r.subsidiary}</td><td>${r.role}</td>
+      <td>${r.start_time}</td><td>${r.end_time}</td>
+      <td>${r.hours.toFixed(2)}</td>
+      <td><button class="btn-danger" onclick="deleteShift(${r.id},'${eid}','${date}')">✕</button></td>
+    </tr>`).join('')}</tbody></table>`;
+}
+</script>
+</body>
+</html>
